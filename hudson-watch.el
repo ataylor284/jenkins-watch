@@ -57,13 +57,14 @@
 	   (status (hudson-watch-extract-last-status xml)))
       (if (string-match "SUCCESS" status)
 	  (setq hudson-watch-mode-line (concat " " hudson-watch-mode-line-success))
-	(setq hudson-watch-mode-line (concat " " hudson-watch-mode-line-failure))))))
+	(setq hudson-watch-mode-line (concat " " hudson-watch-mode-line-failure)))
+      (kill-buffer))))
 
 (defun hudson-watch-extract-last-status (xml)
-  (let*	((feed (first xml))
+  (let*	((feed (car xml))
 	 (entries (xml-get-children feed 'entry))
-	 (last-entry (first entries)))
-    (first (xml-node-children (first (xml-get-children last-entry 'title))))))
+	 (last-entry (car entries)))
+    (car (xml-node-children (car (xml-get-children last-entry 'title))))))
 
 (defconst hudson-watch-success-image
   (when (image-type-available-p 'xpm)
@@ -182,3 +183,6 @@ static char *favicon[] = {
   ""
   (if (boundp 'mode-line-modes)
       (delete '(t hudson-watch-mode-line) mode-line-modes)))
+
+(provide 'hudson-watch)
+
