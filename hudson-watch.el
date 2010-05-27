@@ -24,7 +24,7 @@
 (defvar hudson-rss-url "http://hudson/hudson/rssAll"
   "The hudson build status RSS feed URL.")
 
-(defvar hudson-watch-timer-interval 10
+(defvar hudson-watch-timer-interval 90
   "The interval to poll hudson.")
 
 (defvar hudson-watch-timer nil
@@ -47,24 +47,35 @@
     (hudson-watch-status-indicator-remove-from-mode-line)))
 
 (defun hudson-watch-timer-action ()
-  (url-retrieve hudson-rss-url #'hudson-watch-update-status))
+  (condition-case exception  
+      (url-retrieve hudson-rss-url #'hudson-watch-update-status)
+    (error 
+     (hudson-watch-log-error exception)
+     (setq hudson-watch-mode-line "X-("))))
 
 (defun hudson-watch-update-status (status)
-  (progn
-    (goto-char (point-min))
-    (search-forward "\n\n")
-    (let* ((xml (xml-parse-region (point) (point-max)))
-	   (status (hudson-watch-extract-last-status xml)))
-      (if (string-match "SUCCESS" status)
-	  (setq hudson-watch-mode-line (concat " " hudson-watch-mode-line-success))
-	(setq hudson-watch-mode-line (concat " " hudson-watch-mode-line-failure)))
-      (kill-buffer))))
+  (setq hw-status status)
+  (goto-char (point-min))
+  (search-forward "\n\n")
+  (let ((status (hudson-watch-extract-last-status)))
+    (cond ((string-match "SUCCESS" status)
+	   (setq hudson-watch-mode-line (concat " " hudson-watch-mode-line-success)))
+	  ((string-match "FAILURE" status)
+	   (setq hudson-watch-mode-line (concat " " hudson-watch-mode-line-failure)))
+	  ((string-match "ERROR" status)
+	   (setq hudson-watch-mode-line "X-("))))
+  (kill-buffer))
 
-(defun hudson-watch-extract-last-status (xml)
-  (let*	((feed (car xml))
-	 (entries (xml-get-children feed 'entry))
-	 (last-entry (car entries)))
-    (car (xml-node-children (car (xml-get-children last-entry 'title))))))
+(defun hudson-watch-extract-last-status ()
+  (condition-case exception
+      (let*	((xml (xml-parse-region (point) (point-max)))
+		 (feed (car xml))
+		 (entries (xml-get-children feed 'entry))
+		 (last-entry (car entries)))
+	(car (xml-node-children (car (xml-get-children last-entry 'title)))))
+    (error 
+     (hudson-watch-log-error exception)
+     "ERROR")))
 
 (defconst hudson-watch-success-image
   (when (image-type-available-p 'xpm)
@@ -170,7 +181,7 @@ static char *favicon[] = {
 		  'help-echo "Build failed")
     ":("))
 
-(defvar hudson-watch-mode-line (concat " " hudson-watch-mode-line-success)
+(defvar hudson-watch-mode-line ":|"
   "What gets displayed on the mode line.")
 (put 'hudson-watch-mode-line 'risky-local-variable t)
 
@@ -183,6 +194,11 @@ static char *favicon[] = {
   ""
   (if (boundp 'mode-line-modes)
       (delete '(t hudson-watch-mode-line) mode-line-modes)))
+
+(defun hudson-watch-log-error (exception)
+  ""
+  (message "%s" (concat "hudson-watch error: " 
+			(eval (cons 'format (cdr exception))))))
 
 (provide 'hudson-watch)
 
