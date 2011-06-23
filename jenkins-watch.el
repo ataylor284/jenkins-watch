@@ -21,8 +21,8 @@
 ;; the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 ;; Boston, MA 02111-1307, USA.
 
-(defvar jenkins-api-url "http://hudson/hudson/rssAll"
-  "The jenkins job api URL.")
+(defvar jenkins-api-url "http://SERVER/jobs/JOB/api/xml"
+  "The jenkins job api URL.  Override this replacing SERVER and JOB with appropriate values.")
 
 (defvar jenkins-watch-timer-interval 90
   "The interval to poll jenkins.")
@@ -57,21 +57,20 @@
   (goto-char (point-min))
   (search-forward "\n\n")
   (let ((status (jenkins-watch-extract-last-status)))
-    (cond ((string-match "SUCCESS" status)
+    (cond ((string-match "blue" status)
 	   (setq jenkins-watch-mode-line (concat " " jenkins-watch-mode-line-success)))
-	  ((string-match "FAILURE" status)
+	  ((string-match "red" status)
 	   (setq jenkins-watch-mode-line (concat " " jenkins-watch-mode-line-failure)))
-	  ((string-match "ERROR" status)
+	  ((string-match "grey" status)
 	   (setq jenkins-watch-mode-line "X-("))))
   (kill-buffer))
 
 (defun jenkins-watch-extract-last-status ()
   (condition-case exception
       (let*	((xml (xml-parse-region (point) (point-max)))
-		 (feed (car xml))
-		 (entries (xml-get-children feed 'entry))
-		 (last-entry (car entries)))
-	(car (xml-node-children (car (xml-get-children last-entry 'title)))))
+		 (project (car xml))
+		 (color (car (xml-get-children project 'color))))
+	(nth 2 color))
     (error 
      (jenkins-watch-log-error exception)
      "ERROR")))
