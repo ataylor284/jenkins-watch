@@ -1,10 +1,10 @@
 ;;; -*- indent-tabs-mode: t; tab-width: 8 -*-
 ;;;
-;;; hudson-watch.el --- Watch continuous integration build status.
+;;; jenkins-watch.el --- Watch continuous integration build status.
 
 ;; Copyright (C) 2010 Andrew Taylor
 
-;; Authors: Andrew Taylor <ataylor@its.to>
+;; Authors: Andrew Taylor <ataylor@redtoad.ca>
 
 ;; This file is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -21,52 +21,51 @@
 ;; the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 ;; Boston, MA 02111-1307, USA.
 
-(defvar hudson-rss-url "http://hudson/hudson/rssAll"
-  "The hudson build status RSS feed URL.")
+(defvar jenkins-api-url "http://hudson/hudson/rssAll"
+  "The jenkins job api URL.")
 
-(defvar hudson-watch-timer-interval 90
-  "The interval to poll hudson.")
+(defvar jenkins-watch-timer-interval 90
+  "The interval to poll jenkins.")
 
-(defvar hudson-watch-timer nil
-  "Timer object for hudson polling will be stored here.")
+(defvar jenkins-watch-timer nil
+  "Timer object for jenkins polling will be stored here.")
 
-(defun hudson-watch-start ()
+(defun jenkins-watch-start ()
   (interactive)
-  (unless hudson-watch-timer
-    (setq hudson-watch-timer
+  (unless jenkins-watch-timer
+    (setq jenkins-watch-timer
 	  (run-at-time "0 sec"
-		       hudson-watch-timer-interval
-		       #'hudson-watch-timer-action))
-    (hudson-watch-status-indicator-add-to-mode-line)))
+		       jenkins-watch-timer-interval
+		       #'jenkins-watch-timer-action))
+    (jenkins-watch-status-indicator-add-to-mode-line)))
 
-(defun hudson-watch-stop ()
+(defun jenkins-watch-stop ()
   (interactive)
-  (when hudson-watch-timer
-    (cancel-timer hudson-watch-timer)
-    (setq hudson-watch-timer nil)
-    (hudson-watch-status-indicator-remove-from-mode-line)))
+  (when jenkins-watch-timer
+    (cancel-timer jenkins-watch-timer)
+    (setq jenkins-watch-timer nil)
+    (jenkins-watch-status-indicator-remove-from-mode-line)))
 
-(defun hudson-watch-timer-action ()
+(defun jenkins-watch-timer-action ()
   (condition-case exception  
-      (url-retrieve hudson-rss-url #'hudson-watch-update-status)
+      (url-retrieve jenkins-api-url #'jenkins-watch-update-status)
     (error 
-     (hudson-watch-log-error exception)
-     (setq hudson-watch-mode-line "X-("))))
+     (jenkins-watch-log-error exception)
+     (setq jenkins-watch-mode-line "X-("))))
 
-(defun hudson-watch-update-status (status)
-  (setq hw-status status)
+(defun jenkins-watch-update-status (status)
   (goto-char (point-min))
   (search-forward "\n\n")
-  (let ((status (hudson-watch-extract-last-status)))
+  (let ((status (jenkins-watch-extract-last-status)))
     (cond ((string-match "SUCCESS" status)
-	   (setq hudson-watch-mode-line (concat " " hudson-watch-mode-line-success)))
+	   (setq jenkins-watch-mode-line (concat " " jenkins-watch-mode-line-success)))
 	  ((string-match "FAILURE" status)
-	   (setq hudson-watch-mode-line (concat " " hudson-watch-mode-line-failure)))
+	   (setq jenkins-watch-mode-line (concat " " jenkins-watch-mode-line-failure)))
 	  ((string-match "ERROR" status)
-	   (setq hudson-watch-mode-line "X-("))))
+	   (setq jenkins-watch-mode-line "X-("))))
   (kill-buffer))
 
-(defun hudson-watch-extract-last-status ()
+(defun jenkins-watch-extract-last-status ()
   (condition-case exception
       (let*	((xml (xml-parse-region (point) (point-max)))
 		 (feed (car xml))
@@ -74,10 +73,10 @@
 		 (last-entry (car entries)))
 	(car (xml-node-children (car (xml-get-children last-entry 'title)))))
     (error 
-     (hudson-watch-log-error exception)
+     (jenkins-watch-log-error exception)
      "ERROR")))
 
-(defconst hudson-watch-success-image
+(defconst jenkins-watch-success-image
   (when (image-type-available-p 'xpm)
     '(image :type xpm
 	    :ascent center
@@ -122,14 +121,14 @@ static char *favicon[] = {
 };
 ")) "Image for successful build.")
 
-(defconst hudson-watch-mode-line-success
-  (if hudson-watch-success-image
+(defconst jenkins-watch-mode-line-success
+  (if jenkins-watch-success-image
       (propertize ":)"
-		  'display hudson-watch-success-image
+		  'display jenkins-watch-success-image
 		  'help-echo "Build succeeded")
     ":)"))
 
-(defconst hudson-watch-failure-image
+(defconst jenkins-watch-failure-image
   (when (image-type-available-p 'xpm)
     '(image :type xpm
 	    :ascent center
@@ -174,31 +173,31 @@ static char *favicon[] = {
 };
 ")) "Image for failed build.")
 
-(defconst hudson-watch-mode-line-failure
-  (if hudson-watch-success-image
+(defconst jenkins-watch-mode-line-failure
+  (if jenkins-watch-success-image
       (propertize ":("
-		  'display hudson-watch-failure-image
+		  'display jenkins-watch-failure-image
 		  'help-echo "Build failed")
     ":("))
 
-(defvar hudson-watch-mode-line ":|"
+(defvar jenkins-watch-mode-line ":|"
   "What gets displayed on the mode line.")
-(put 'hudson-watch-mode-line 'risky-local-variable t)
+(put 'jenkins-watch-mode-line 'risky-local-variable t)
 
-(defun hudson-watch-status-indicator-add-to-mode-line ()
+(defun jenkins-watch-status-indicator-add-to-mode-line ()
   ""
   (if (boundp 'mode-line-modes)
-      (add-to-list 'mode-line-modes '(t hudson-watch-mode-line) t)))
+      (add-to-list 'mode-line-modes '(t jenkins-watch-mode-line) t)))
 
-(defun hudson-watch-status-indicator-remove-from-mode-line ()
+(defun jenkins-watch-status-indicator-remove-from-mode-line ()
   ""
   (if (boundp 'mode-line-modes)
-      (delete '(t hudson-watch-mode-line) mode-line-modes)))
+      (delete '(t jenkins-watch-mode-line) mode-line-modes)))
 
-(defun hudson-watch-log-error (exception)
+(defun jenkins-watch-log-error (exception)
   ""
-  (message "%s" (concat "hudson-watch error: " 
+  (message "%s" (concat "jenkins-watch error: " 
 			(eval (cons 'format (cdr exception))))))
 
-(provide 'hudson-watch)
+(provide 'jenkins-watch)
 
