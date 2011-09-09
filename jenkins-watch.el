@@ -21,7 +21,7 @@
 ;; the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 ;; Boston, MA 02111-1307, USA.
 
-(defvar jenkins-api-url "http://SERVER/jobs/JOB/api/xml"
+(defvar jenkins-api-url "http://SERVER/job/JOB/api/xml"
   "The jenkins job api URL.  Override this replacing SERVER and JOB with appropriate values.")
 
 (defvar jenkins-watch-timer-interval 90
@@ -29,6 +29,11 @@
 
 (defvar jenkins-watch-timer nil
   "Timer object for jenkins polling will be stored here.")
+
+(defconst jenkins-watch-jenkins-status-name-alist
+  '(("blue" . success)
+    ("red" . failure)
+    ("grey" . error)))
 
 (defun jenkins-watch-start ()
   (interactive)
@@ -57,11 +62,11 @@
   (goto-char (point-min))
   (search-forward "\n\n")
   (let ((status (jenkins-watch-extract-last-status)))
-    (cond ((string-match "blue" status)
+    (cond ((eq status 'success)
 	   (setq jenkins-watch-mode-line (concat " " jenkins-watch-mode-line-success)))
-	  ((string-match "red" status)
+	  ((eq status 'failure)
 	   (setq jenkins-watch-mode-line (concat " " jenkins-watch-mode-line-failure)))
-	  ((string-match "grey" status)
+	  ((eq status 'error)
 	   (setq jenkins-watch-mode-line "X-("))))
   (kill-buffer))
 
@@ -70,7 +75,7 @@
       (let*	((xml (xml-parse-region (point) (point-max)))
 		 (project (car xml))
 		 (color (car (xml-get-children project 'color))))
-	(nth 2 color))
+	(cdr (assoc (nth 2 color) jenkins-watch-jenkins-status-name-alist)))
     (error 
      (jenkins-watch-log-error exception)
      "ERROR")))
