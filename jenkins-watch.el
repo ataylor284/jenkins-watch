@@ -25,6 +25,10 @@
   "Jenkins watch."
   :prefix "jenkins-watch")
 
+(defcustom jenkins-login-url nil
+  "Jenkins login URL."
+  :type 'string)
+
 (defcustom jenkins-api-url "http://SERVER/job/JOB/api/xml"
   "The jenkins job api URL.  Override this replacing SERVER and JOB with appropriate values."
   :type 'string
@@ -59,9 +63,21 @@
     (setq jenkins-watch-timer nil)
     (jenkins-watch-status-indicator-remove-from-mode-line)))
 
+(defun jenkins-auth (callback)
+  (let ((url-request-method "POST")
+	(url-request-data "j_username="))
+    (url-retrieve jenkins-login-url callback)))
+
+(defun jenkins-fetch-data (&rest arg)
+  (let ((url-request-method nil)
+	(url-request-data nil))
+    (url-retrieve jenkins-api-url #'jenkins-watch-update-status)))
+
 (defun jenkins-watch-timer-action ()
-  (condition-case exception  
-      (url-retrieve jenkins-api-url #'jenkins-watch-update-status)
+  (condition-case exception
+      (if jenkins-login-url
+	  (jenkins-auth #'jenkins-fetch-data)
+	(jenkins-fetch-data))
     (error 
      (jenkins-watch-log-error exception)
      (setq jenkins-watch-mode-line "X-("))))
