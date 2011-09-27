@@ -21,11 +21,19 @@
 ;; the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 ;; Boston, MA 02111-1307, USA.
 
-(defvar jenkins-api-url "http://SERVER/job/JOB/api/xml"
-  "The jenkins job api URL.  Override this replacing SERVER and JOB with appropriate values.")
+(defgroup jenkins-watch nil
+  "Jenkins watch."
+  :prefix "jenkins-watch")
 
-(defvar jenkins-watch-timer-interval 90
-  "The interval to poll jenkins.")
+(defcustom jenkins-api-url "http://SERVER/job/JOB/api/xml"
+  "The jenkins job api URL.  Override this replacing SERVER and JOB with appropriate values."
+  :type 'string
+  :group 'jenkins-watch)
+
+(defcustom jenkins-watch-timer-interval 90
+  "The interval to poll jenkins."
+  :type 'number
+  :group 'jenkins-watch)
 
 (defvar jenkins-watch-timer nil
   "Timer object for jenkins polling will be stored here.")
