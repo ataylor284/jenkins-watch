@@ -1,8 +1,6 @@
-;;; -*- indent-tabs-mode: t; tab-width: 8 -*-
-;;;
-;;; jenkins-watch.el --- Watch continuous integration build status.
+;;; jenkins-watch.el --- Watch continuous integration build status -*- indent-tabs-mode: t; tab-width: 8 -*-
 
-;; Copyright (C) 2010 Andrew Taylor
+;; Copyright (C) 2010, 2011 Andrew Taylor
 
 ;; Authors: Andrew Taylor <ataylor@redtoad.ca>
 
@@ -21,13 +19,20 @@
 ;; the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 ;; Boston, MA 02111-1307, USA.
 
+;;; Commentary:
+;; Displays an icon representing the current build status of
+;; jenkins/hudson on the modeline.
+
+;;; Code:
+
 (defgroup jenkins-watch nil
   "Jenkins watch."
   :prefix "jenkins-watch")
 
 (defcustom jenkins-login-url nil
   "Jenkins login URL."
-  :type 'string)
+  :type 'string
+  :group 'jenkins-watch)
 
 (defcustom jenkins-api-url "http://SERVER/job/JOB/api/xml"
   "The jenkins job api URL.  Override this replacing SERVER and JOB with appropriate values."
@@ -48,6 +53,7 @@
     ("grey" . error)))
 
 (defun jenkins-watch-start ()
+  "Start watching jenkins."
   (interactive)
   (unless jenkins-watch-timer
     (setq jenkins-watch-timer
@@ -57,6 +63,7 @@
     (jenkins-watch-status-indicator-add-to-mode-line)))
 
 (defun jenkins-watch-stop ()
+  "Stop watching jenkins."
   (interactive)
   (when jenkins-watch-timer
     (cancel-timer jenkins-watch-timer)
@@ -78,7 +85,7 @@
       (if jenkins-login-url
 	  (jenkins-auth #'jenkins-fetch-data)
 	(jenkins-fetch-data))
-    (error 
+    (error
      (jenkins-watch-log-error exception)
      (setq jenkins-watch-mode-line "X-("))))
 
@@ -100,7 +107,7 @@
 		 (project (car xml))
 		 (color (car (xml-get-children project 'color))))
 	(cdr (assoc (nth 2 color) jenkins-watch-jenkins-status-name-alist)))
-    (error 
+    (error
      (jenkins-watch-log-error exception)
      "ERROR")))
 
@@ -282,8 +289,9 @@ static char * red_xpm[] = {
 
 (defun jenkins-watch-log-error (exception)
   ""
-  (message "%s" (concat "jenkins-watch error: " 
+  (message "%s" (concat "jenkins-watch error: "
 			(eval (cons 'format (cdr exception))))))
 
 (provide 'jenkins-watch)
 
+;;; jenkins-watch.el ends here
