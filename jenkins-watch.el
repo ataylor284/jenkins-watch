@@ -2,7 +2,9 @@
 
 ;; Copyright (C) 2010, 2011 Andrew Taylor
 
-;; Authors: Andrew Taylor <ataylor@redtoad.ca>
+;; Author: Andrew Taylor <ataylor@redtoad.ca>
+;; URL: https://github.com/ataylor284/jenkins-watch
+;; Version: 1.1
 
 ;; This file is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -78,7 +80,7 @@
 (defun jenkins-fetch-data (&rest arg)
   (let ((url-request-method nil)
 	(url-request-data nil))
-    (url-retrieve jenkins-api-url #'jenkins-watch-update-status)))
+    (url-retrieve jenkins-api-url #'jenkins-watch-update-status nil t)))
 
 (defun jenkins-watch-timer-action ()
   (condition-case exception
@@ -103,9 +105,9 @@
 
 (defun jenkins-watch-extract-last-status ()
   (condition-case exception
-      (let*	((xml (xml-parse-region (point) (point-max)))
-		 (project (car xml))
-		 (color (car (xml-get-children project 'color))))
+      (let* ((xml (xml-parse-region (point) (point-max)))
+	     (project (car xml))
+	     (color (car (xml-get-children project 'color))))
 	(cdr (assoc (nth 2 color) jenkins-watch-jenkins-status-name-alist)))
     (error
      (jenkins-watch-log-error exception)
