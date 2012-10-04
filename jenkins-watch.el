@@ -1,10 +1,10 @@
 ;;; jenkins-watch.el --- Watch continuous integration build status -*- indent-tabs-mode: t; tab-width: 8 -*-
 
-;; Copyright (C) 2010, 2011 Andrew Taylor
+;; Copyright (C) 2010, 2011, 2012 Andrew Taylor
 
 ;; Author: Andrew Taylor <ataylor@redtoad.ca>
 ;; URL: https://github.com/ataylor284/jenkins-watch
-;; Version: 1.1
+;; Version: 1.2
 
 ;; This file is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -26,6 +26,8 @@
 ;; jenkins/hudson on the modeline.
 
 ;;; Code:
+
+(require 'url)
 
 (defgroup jenkins-watch nil
   "Jenkins watch."
@@ -51,6 +53,7 @@
 
 (defconst jenkins-watch-jenkins-status-name-alist
   '(("blue" . success)
+    ("yellow" . unstable)
     ("red" . failure)
     ("grey" . error)))
 
@@ -97,7 +100,9 @@
   (let ((status (jenkins-watch-extract-last-status)))
     (cond ((eq status 'success)
 	   (setq jenkins-watch-mode-line (concat " " jenkins-watch-mode-line-success)))
-	  ((eq status 'failure)
+	  ((eq status 'unstable)
+	   (setq jenkins-watch-mode-line (concat " " jenkins-watch-mode-line-unstable)))
+ 	  ((eq status 'failure)
 	   (setq jenkins-watch-mode-line (concat " " jenkins-watch-mode-line-failure)))
 	  ((eq status 'error)
 	   (setq jenkins-watch-mode-line "X-("))))
@@ -193,6 +198,92 @@ static char * blue_xpm[] = {
 		  'display jenkins-watch-success-image
 		  'help-echo "Build succeeded")
     ":)"))
+
+(defconst jenkins-watch-unstable-image
+  (when (image-type-available-p 'xpm)
+    '(image :type xpm
+           :ascent center
+           :data
+           "/* XPM */
+static char *yellow[] = {
+/* columns rows colors chars-per-pixel */
+\"16 16 52 1 \",
+\"     c None\",
+\"N    c #7B6819\",
+\".    c #8D7824\",
+\"X    c #C3B446\",
+\"o    c #CDB14B\",
+\"O    c #BCA144\",
+\"+    c #BA9F4D\",
+\"@    c #CFB14B\",
+\"#    c #FFB839\",
+\"$    c #CEAF5B\",
+\"%    c #BDA351\",
+\"&    c #C7AB51\",
+\"*    c #CDAE5B\",
+\"=    c #DCBC62\",
+\"-    c #DCBF64\",
+\";    c #DFBE63\",
+\":    c #DCCB6E\",
+\">    c #DACF7A\",
+\",    c #E0C565\",
+\"<    c #E8BE5D\",
+\"1    c #FEBC47\",
+\"2    c #EFC05E\",
+\"3    c #F8C15B\",
+\"4    c #DFCC71\",
+\"5    c #E3BF60\",
+\"6    c #FCC547\",
+\"7    c #FACA54\",
+\"8    c #F9D659\",
+\"9    c #E3CE6C\",
+\"0    c #E5DB88\",
+\"q    c #F2C96C\",
+\"w    c #F6C360\",
+\"e    c #F8DE60\",
+\"r    c #F2D372\",
+\"t    c #F6E569\",
+\"y    c #F7EA79\",
+\"u    c #D1B553\",
+\"i    c #D4C567\",
+\"p    c #EBE191\",
+\"a    c #EDE393\",
+\"s    c #EFE382\",
+\"d    c #F8EC87\",
+\"f    c #F9EE95\",
+\"g    c #FAF09D\",
+\"h    c #FBF2A6\",
+\"j    c #FCF5B9\",
+\"k    c #FDF8C5\",
+\"l    c #FEFBD7\",
+\"c    c #A68F0F\",
+\"n    c #BDAF3D\",
+\"M    c #C2B54A\",
+\"C    c #AB9516\",
+\"                \",
+\"                \",
+\"     >pghd:     \",
+\"   Cphhghdtt    \",
+\"   shjkkhdt8y   \",
+\"  odfkkkhfte6%  \",
+\"  -dfhkkhdt86<  \",
+\"  rydfggfye86y  \",
+\"  -8tyddyt86#7  \",
+\"  %68ette86##u  \",
+\"   w668766##t   \",
+\"   u7######6*   \",
+\"    o86166w%    \",
+\"     NO&&&      \",
+\"                \",
+\"                \"};
+")) "Image for unstable build.")
+
+(defconst jenkins-watch-mode-line-unstable
+  (if jenkins-watch-unstable-image
+      (propertize ":/"
+                 'display jenkins-watch-unstable-image
+                 'help-echo "Build unstable")
+    ":/"))
 
 (defconst jenkins-watch-failure-image
   (when (image-type-available-p 'xpm)

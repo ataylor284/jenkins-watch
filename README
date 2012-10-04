@@ -1,3 +1,26 @@
 A simple emacs extension to display the current build status of
 jenkins/hudson on the modeline.  jenkins-watch is installable through
 marmalade: http://marmalade-repo.org/packages/jenkins-watch
+
+Installation:
+
+1. Install jenkins-watch through M-x list-packages (using marmalade or
+melpa repos) or download and place in directory in your load-path.
+
+2. Add (require 'jenkins-watch) to your .emacs files.  Restart emacs
+or evalute with M-: (require 'jenkins-watch)
+
+Note that if you've installed jenkins-watch with list-packages, you'll
+need to do the require in the 'after-init-hook, e.g.:
+
+    (add-hook 'after-init-hook 
+              (lambda () (require 'jenkins-watch)))
+
+3. Run M-x customize-group jenkins-watch, and enter the API url for
+your jenkins server as the "Jenkins Api Url".  Alternatively, just add
+(setq jenkins-api-url "http://jenkins/job/project/api/xml") to your
+.emacs.
+
+4. Run M-x jenkins-watch-start.  At any time, M-x jenkins-watch-stop
+will stop it.  Add (jenkins-watch-start) to your .emacs to start it
+automatically.
